@@ -1,0 +1,10 @@
+# Streamlit 项目配置
+# 放在项目根目录下，只要工作目录是项目根，Streamlit 就会自动读取。
+
+[server]
+# 首次运行不再询问邮箱（默认是 true，会在终端里阻塞等待你输入）
+showEmailPrompt = false
+
+[browser]
+# 关闭匿名使用数据上报，终端不再打印 "Collecting usage statistics"
+gatherUsageStats = false
