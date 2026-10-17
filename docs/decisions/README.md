@@ -26,6 +26,7 @@
 | [ADR-014](adr-014-lead-in-page-and-prune.md) | 导语页治理、零重建清理，以及「评测跑的不是线上」 | 已采纳 |
 | [ADR-015](adr-015-graph-api-code-agent.md) | 交互层与服务层：比较类不澄清、状态图、HTTP 接口、代码 Agent | 已采纳 |
 | [ADR-016](adr-016-web-frontend.md) | 前端不做在 Streamlit 里（零依赖单页 + 同源托管） | 已采纳 |
+| [ADR-017](adr-017-ablation-must-be-retested.md) | 索引快照变化后消融表必须整体重测（先验单独开会让文档域掉 20.9pp） | 已采纳 |
 
 ## 几条值得单独一提的
 
