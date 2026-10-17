@@ -19,6 +19,14 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# faiss-cpu 的 wheel 动态链接 libgomp（OpenMP 运行时），而 python:*-slim 不带它。
+# 少了这一行，import faiss 会直接抛：
+#   ImportError: libgomp.so.1: cannot open shared object file
+# 本地 Windows 不会有这个问题（conda/venv 自带了），所以只在容器里才暴露。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # 先单独拷贝依赖清单再安装：改业务代码时这一层能命中缓存，不用重装几百兆依赖。
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
