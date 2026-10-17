@@ -1,13 +1,13 @@
 # 一条命令跑起来：docker compose up
 #
-# 依赖两个**本地已存在**的东西（都不进 git，理由见 .gitignore）：
-#   storage/  向量库，50MB，本机跑过 ingest.py 才有
-#   data/     语料，12MB，用 fetch_docs.py 抓取
-# 没有的话先在宿主机跑一次：
-#   python ingest.py
+# 索引（storage/，51MB）已经打进镜像，所以 build 完就能问，不需要先在宿主机跑 ingest.py。
+# 语料（data/，12MB）不进镜像 —— 检索只查索引，运行时不需要原始文档。
 #
-# .env 里的 API Key 通过 env_file 注入，不写进镜像层，也不会出现在
-# docker history 里（只在容器的环境变量中）。
+# 唯一还需要本地准备的是 .env（API Key）。它通过 env_file 注入，不写进镜像层，
+# 也不会出现在 docker history 里（只在容器的环境变量中）。
+#
+# 重建索引后记得 --build 重新构建，否则镜像里还是旧快照：
+#   docker compose up --build
 
 services:
   copilot:
@@ -23,9 +23,10 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: "8000"
       WBRAG_NO_BROWSER: "1"
+      # 与 README 上的评测口径保持一致 —— config.py 默认是 8，不写就会静默变 8
+      TOP_K: "4"
     volumes:
-      # 不用只读挂载：界面上的「记住这个案例」会往 storage/ 追加向量片段、
-      # 往 data/cases/ 落文件，只读会让这个功能直接报错。
-      - ./storage:/app/storage
+      # 只挂 data（不挂 storage）：界面上的「记住这个案例」会往 data/cases/ 落文件，
+      # 不挂的话容器一销毁这些案例就没了。storage 用镜像里的那份。
       - ./data:/app/data
     restart: unless-stopped

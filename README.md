@@ -245,19 +245,19 @@
 
 ## 用 Docker 跑（部署用）
 
-仓库带的 `Dockerfile` + `docker-compose.yml` 是给服务器 / 云平台用的。
+仓库带的 `Dockerfile` + `docker-compose.yml` + `render.yaml` 是给服务器 / 云平台用的。
 
-镜像里**刻意不含**索引和语料（`storage/` 50MB、`data/` 12MB，都在 `.gitignore` 里），
-运行时挂载进去 —— 否则每次重建索引都要重新构建镜像。
+**镜像里包含向量索引**（`storage/` 51MB），所以构建完就能直接问，不需要先在容器里跑一次
+`ingest.py`（重跑要花 embedding 费用和 8 分钟）。语料 `data/` 不进镜像 —— 检索只查索引，
+运行时不需要原始文档。
 
 ```bash
-# 宿主机上先有索引（没有就建一次）
-.venv\Scripts\python.exe ingest.py
-
-# 一条命令起服务
+# 一条命令起服务（只需本地有 .env）
 docker compose up --build
 # → http://127.0.0.1:8000
 ```
+
+> 重建索引之后要带 `--build` 重新构建，否则镜像里还是旧快照。
 
 三个容易踩的点，配置里已经处理：
 
@@ -265,11 +265,30 @@ docker compose up --build
 - **`WBRAG_NO_BROWSER=1`**。容器没有桌面环境，不该去调 `webbrowser`。
 - **Key 走 `env_file`**，只在容器环境变量里，不进镜像层（`docker history` 看不到），也不进 git。
 
-部署到 Render / Railway / Hugging Face Spaces 这类平台时，直接把 `Dockerfile` 交给它构建即可。
+### 部署到 Render
 
-> ⚠️ **诚实说明：本机没有 Docker，这套配置没实测过。** 只做了路径与变量的一致性检查
-> （`API_HOST`、`WBRAG_NO_BROWSER`、挂载点、healthcheck 用的都是代码里真实读的字段）。
-> 第一次在装了 Docker 的机器上跑通后，把这条注记删掉再写进简历。
+仓库根目录的 `render.yaml` 是 Render Blueprint，控制台里 **New → Blueprint → 选本仓库**
+就能读到，不用手填构建命令。
+
+配好之后面板里只需填两个 Key（`DEEPSEEK_API_KEY`、`DASHSCOPE_API_KEY`），其余都在
+`render.yaml` 里写死了。其中有一条**必须显式写、不能靠默认值**：
+
+- **`TOP_K=4`**。`app/config.py` 里 top_k 的默认值是 `8`，而 `.env` 里是 `4`。
+  README 上 97.5% / 95.8% 全部是 `top_k=4` 测出来的；云上没有 `.env`，
+  不设这一项就会静默退回 8 —— 等于跑了一份没评测过的参数。
+
+还有两个平台差异要知道：
+
+- **免费实例会休眠**（约 15 分钟无请求），首次访问冷启动需要几十秒（要重读 51MB 索引）。
+  简历上放链接时最好自己先点一次把它唤醒。
+- **免费实例 512MB 内存**。加载近万片段的 FAISS 索引后，余量不大；如果日志里出现
+  OOM，就换成付费实例或把知识库裁到单域。
+
+> ⚠️ **诚实说明：本机没有 Docker，以上配置没有在真实容器里跑过。**
+> 做了路径与变量的一致性检查（`API_HOST`、`WBRAG_NO_BROWSER`、`PORT` 与 `API_PORT`、
+> healthcheck 路径、索引是否真的进了构建上下文），但没验证过 `docker build` 本身。
+> 第一次跑通后把这条注记删掉，再写进简历。
+
 
 ## .env 怎么填
 

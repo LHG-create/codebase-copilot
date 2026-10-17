@@ -17,10 +17,9 @@ __pycache__/
 .run/
 .workbuddy/
 
-# 数据与索引：运行时挂载，不打进镜像（理由见 Dockerfile 顶部）
-storage/
-.test_storage/
+# 语料：12MB 第三方文档，公开镜像里用不到（索引已经包含切好的片段）
 data/
+.test_storage/
 
 # 密钥
 .env

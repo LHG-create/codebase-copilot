@@ -1,0 +1,58 @@
+# Render 部署配置（Blueprint）
+#
+# 用法：Render 控制台 → New → Blueprint → 选这个仓库 → 它会读到本文件。
+# 之后在面板里填三个 Key 即可（标了 sync: false 的项不会从仓库读值）。
+#
+# 为什么用 Docker 而不是 Render 的 Python 环境：
+# 本项目需要 FAISS + 一份 51MB 的索引快照，Dockerfile 里已经把「装依赖 + 拷贝索引」
+# 定死了，本地和云端跑的是同一套，不会出现「本地能跑云端缺包」。
+
+services:
+  - type: web
+    name: codebase-copilot
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      # ---- 端口：两个都要设，少一个就连不上 ----
+      # Render 把流量转发到 PORT（它默认注入 10000），而本项目读的是 API_PORT。
+      # 只设其中一个的话，服务在 8000 监听、Render 却去探 10000，表现为健康检查一直失败。
+      - key: PORT
+        value: 8000
+      - key: API_PORT
+        value: 8000
+      # 必须绑 0.0.0.0，只听 127.0.0.1 的话容器外访问不到
+      - key: API_HOST
+        value: 0.0.0.0
+      # 容器里没有桌面环境，禁止 webbrowser 开浏览器
+      - key: WBRAG_NO_BROWSER
+        value: 1
+
+      # ---- 检索参数：**这一项必须显式写，不能靠默认值** ----
+      # app/config.py 里 top_k 的默认值是 8，而 .env 里是 4。
+      # README 上的 97.5% / 95.8% 全部是 top_k=4 测出来的；
+      # 云上没有 .env，若不设这一项就会静默退回 8 —— 跑的是没评测过的参数。
+      - key: TOP_K
+        value: 4
+
+      # ---- 模型配置（非密钥，直接写值）----
+      - key: LLM_PROVIDER
+        value: deepseek
+      - key: LLM_MODEL
+        value: deepseek-chat
+      - key: LLM_TEMPERATURE
+        value: 0.2
+      - key: EMBEDDING_PROVIDER
+        value: dashscope
+      - key: EMBEDDING_MODEL
+        value: text-embedding-v3
+
+      # ---- 密钥：sync: false 表示「值不在仓库里，去面板填」----
+      # 在 Render 面板的 Environment 页填入后，它们会以环境变量注入，
+      # 和 pydantic-settings 的字段名大小写不敏感匹配（deepseek_api_key ← DEEPSEEK_API_KEY）。
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DASHSCOPE_API_KEY
+        sync: false

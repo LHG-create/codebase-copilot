@@ -7,8 +7,13 @@ __pycache__/
 # 密钥：绝对不要提交
 .env
 
-# 向量库产物
-storage/
+# 向量库产物：**索引快照入库**（约 51MB），这样云端部署不必在容器里重跑
+# 一次 ingest（重跑要花 embedding 费用和 8 分钟）。代价是仓库变大。
+# 只用白名单锁住这三个文件，避免以后 storage/ 里出现临时产物时误入库：
+storage/*
+!storage/index.faiss
+!storage/index.pkl
+!storage/domain_centroids.npz
 .test_storage/
 
 # IDE
