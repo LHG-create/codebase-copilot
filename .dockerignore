@@ -1,0 +1,30 @@
+# 构建上下文里不要的东西：镜像只留「跑起来需要」的部分。
+# 这个文件直接影响构建速度和镜像体积（.venv 有 751MB，传进 daemon 会很慢）。
+
+# 虚拟环境与缓存
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.eval_cache/
+
+# 版本库与 IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+.run/
+.workbuddy/
+
+# 数据与索引：运行时挂载，不打进镜像（理由见 Dockerfile 顶部）
+storage/
+.test_storage/
+data/
+
+# 密钥
+.env
+
+# 文档与截图：镜像里用不到
+docs/screenshots/
+*.md

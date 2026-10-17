@@ -1,0 +1,31 @@
+# 一条命令跑起来：docker compose up
+#
+# 依赖两个**本地已存在**的东西（都不进 git，理由见 .gitignore）：
+#   storage/  向量库，50MB，本机跑过 ingest.py 才有
+#   data/     语料，12MB，用 fetch_docs.py 抓取
+# 没有的话先在宿主机跑一次：
+#   python ingest.py
+#
+# .env 里的 API Key 通过 env_file 注入，不写进镜像层，也不会出现在
+# docker history 里（只在容器的环境变量中）。
+
+services:
+  copilot:
+    build: .
+    image: codebase-copilot:latest
+    container_name: codebase-copilot
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # 覆盖 .env 里的 127.0.0.1：容器必须监听 0.0.0.0 才能被宿主机访问
+      API_HOST: 0.0.0.0
+      API_PORT: "8000"
+      WBRAG_NO_BROWSER: "1"
+    volumes:
+      # 不用只读挂载：界面上的「记住这个案例」会往 storage/ 追加向量片段、
+      # 往 data/cases/ 落文件，只读会让这个功能直接报错。
+      - ./storage:/app/storage
+      - ./data:/app/data
+    restart: unless-stopped

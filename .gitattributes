@@ -1,0 +1,16 @@
+# 统一换行：Windows 上 core.autocrlf 默认会把文本转成 CRLF，
+# 而 Dockerfile / compose 里的 CRLF 会让构建报莫名其妙的错误。
+* text=auto
+
+*.py   text eol=lf
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+
+# 索引与截图是二进制，别做换行转换
+*.faiss binary
+*.pkl   binary
+*.npz   binary
+*.png   binary
